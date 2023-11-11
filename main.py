@@ -3,6 +3,7 @@ from pymystem3 import Mystem
 import nltk
 nltk.download('stopwords')
 import pymorphy3
+import sys
 
 # Инициализируем MorphAnalyzer
 morph = pymorphy3.MorphAnalyzer()
@@ -89,4 +90,12 @@ def process_excel_file(file_path):
     df.to_excel(file_path, index=False)
 
 # Вызываем функцию с путем к вашему файлу
-process_excel_file(r'C:\Users\mitin\Downloads\list3 — копия.xlsx')
+# process_excel_file(r'C:\Users\mitin\Downloads\list3 — копия.xlsx')
+if __name__ == '__main__':
+    # Проверяем, передан ли путь к файлу в качестве аргумента командной строки
+    if len(sys.argv) > 1:
+        file_path = sys.argv[1]  # Используем имя файла, переданное из .bat файла
+        process_excel_file(file_path)
+    else:
+        print("Ошибка: Не указан путь к файлу Excel.")
+        sys.exit(1)
