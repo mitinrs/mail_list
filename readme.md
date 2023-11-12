@@ -42,7 +42,7 @@ Microsoft Outlook и VBA (Visual Basic for Applications): VBA скрипт (Outl
 
 * Если Python не установлен, его можно скачать по ссылке: [Python 3.11.5](https://www.python.org/ftp/python/3.11.5/python-3.11.5-amd64.exe).
 * Git доступен для скачивания здесь: [Git 2.42.0.2](https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe).
-2. **Запуск install.bat:** После установки Python и Git, запустите скрипт [install.bat](install/install.bat). Этот скрипт автоматически выполнит следующие действия:
+2. **Запуск install.bat:** После установки Python и Git, запустите скрипт [install.bat](https://github.com/dc38cf63-5e57-4882-bafb-37baa65675f5). Этот скрипт автоматически выполнит следующие действия:
 
 * Проверит наличие Git и, при необходимости, предложит его установить.
 * Клонирует репозиторий проекта с GitHub, если он еще не склонирован, или обновит его, если проект уже был склонирован.
