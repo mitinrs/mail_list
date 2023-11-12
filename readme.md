@@ -90,7 +90,7 @@ Microsoft Outlook и VBA (Visual Basic for Applications): VBA скрипт (Outl
 * Используйте шаблон **mail template.docx** для создания текста письма. При необходимости, вставьте в него плейсхолдеры для персонализации.
 ### 4. **Интеграция и использование скрипта в Outlook**
 
-* Интегрируйте Outlook VBA script.txt в Microsoft Outlook через редактор VBA.
+* Интегрируйте **Outlook VBA script.txt** в Microsoft Outlook через редактор VBA.
 * Запустите скрипт из Outlook, он предложит выбрать файл list.xlsx и mail template.docx.
 * Скрипт автоматически создаст письма с соответствующими вложениями и сохранит их в черновиках.
 ### 5. **Проверка и отправка писем**
