@@ -3,3 +3,4 @@ openpyxl
 pymystem3
 nltk
 pymorphy3
+docx
