@@ -8,6 +8,13 @@ import sys
 def clean_filename(filename):
     return re.sub(r'[\\/*?:"<>|]', '_', filename)
 
+def get_cell_value(cell):
+    # Если ячейка содержит формулу, вернуть результат формулы
+    if cell.data_type == 'f':
+        return cell.value
+    # В противном случае, вернуть само значение
+    return cell.internal_value
+
 def find_placeholders(doc):
     placeholder_pattern = r"\[(.+?)\]"
     placeholders = set()
@@ -32,6 +39,17 @@ def docx_to_pdf(docx_filename, pdf_filename):
     except Exception as e:
         print(f"Failed to save '{pdf_filename}'. Error: {e}")
 
+def replace_placeholder(paragraph, placeholder, replacement):
+    for run in paragraph.runs:
+        run.text = run.text.replace(placeholder, replacement)
+
+def replace_placeholder_in_table(table, placeholder, replacement):
+    for row in table.rows:
+        for cell in row.cells:
+            for paragraph in cell.paragraphs:
+                replace_placeholder(paragraph, placeholder, replacement)
+
+
 if __name__ == '__main__':
 
     # Забираем аргументы командной строки
@@ -40,8 +58,12 @@ if __name__ == '__main__':
         template_path = sys.argv[2]  # Используем имя excel файла, переданное из .bat файла
         working_directory = sys.argv[3] # Используем путь к рабочей папке, переданный из .bat файла
     else:
-        print("Ошибка: Неверный вызов вункции")
-        sys.exit(1)
+        # Пути к файлам и папкам
+        working_directory = 'D:\\GIT\\email list'
+        list_path = os.path.join(working_directory, 'list.xlsx')
+        template_path = os.path.join(working_directory, 'template.docx')       
+        #print("Ошибка: Неверный вызов вункции")
+        #sys.exit(1)
 
     # Пути к файлам и папкам
     excel_filename = os.path.join(working_directory, list_path)
@@ -54,7 +76,7 @@ if __name__ == '__main__':
     os.makedirs(pdf_folder, exist_ok=True)
 
     # Загрузка файла Excel
-    wb = openpyxl.load_workbook(excel_filename)
+    wb = openpyxl.load_workbook(excel_filename, data_only=True)
     sheet = wb.active
 
     # Загрузка шаблона Word
@@ -65,27 +87,31 @@ if __name__ == '__main__':
 
     # Создание словаря для сопоставления заголовков столбцов и плейсхолдеров
     column_titles = {cell.value: idx for idx, cell in enumerate(sheet[1])}
+    
+    # Создание словаря для сопоставления плейсхолдеров и заголовков столбцов Excel
+    column_titles = {cell.value: idx for idx, cell in enumerate(sheet[1], start=1)}
+    placeholder_to_column = {f'[{placeholder}]': sheet.cell(row=1, column=column_titles[placeholder]).value for placeholder in placeholders if placeholder in column_titles}
+
 
     # Обработка каждой строки в Excel
-    for row_index, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+    for row_index, row in enumerate(sheet.iter_rows(min_row=2), start=2):
         doc = Document(template_filename)
 
-        # Замена плейсхолдеров в параграфах и таблицах
-        for placeholder in placeholders:
-            placeholder_tag = f'[{placeholder}]'
-            column_index = column_titles.get(placeholder)
-            if column_index is not None:
-                replacement_text = str(row[column_index] or '')
-                for paragraph in doc.paragraphs:
-                    paragraph.text = paragraph.text.replace(placeholder_tag, replacement_text)
-                for table in doc.tables:
-                    for table_row in table.rows:
-                        for cell in table_row.cells:
-                            cell.text = cell.text.replace(placeholder_tag, replacement_text)
+        # Замена плейсхолдеров в параграфах и таблицах, сохраняя форматирование
+        for placeholder_tag, column_title in placeholder_to_column.items():
+            column_index = column_titles[column_title]
+            cell = row[column_index - 1]
+            replacement_text = str(get_cell_value(cell) or '')
+            for paragraph in doc.paragraphs:
+                replace_placeholder(paragraph, placeholder_tag, replacement_text)
+            for table in doc.tables:
+                replace_placeholder_in_table(table, placeholder_tag, replacement_text)
 
         # Генерация имен файлов и путей
-        outgoing_number = str(row[column_titles['Исходящий номер']])
-        addressee_name = str(row[column_titles['Имя адресата']])
+        outgoing_number_cell = row[column_titles['Исходящий номер'] - 1]
+        addressee_name_cell = row[column_titles['Имя адресата'] - 1]
+        outgoing_number = str(get_cell_value(outgoing_number_cell) or '')
+        addressee_name = str(get_cell_value(addressee_name_cell) or '')
         filename = f'{outgoing_number}-{addressee_name}'
         cleaned_filename = clean_filename(filename)
         new_docx_path = os.path.join(doc_folder, f'{cleaned_filename}.docx')

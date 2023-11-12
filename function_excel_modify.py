@@ -1,9 +1,12 @@
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 from pymystem3 import Mystem
 import nltk
-nltk.download('stopwords')
 import pymorphy3
 import sys
+
+nltk.download('stopwords')
 
 # Инициализируем MorphAnalyzer
 morph = pymorphy3.MorphAnalyzer()
@@ -61,33 +64,44 @@ def process_excel_file(file_path):
     # Инициализация Mystem
     mystem = Mystem()
 
-    # Загружаем файл Excel
-    df = pd.read_excel(file_path)
+    # Загружаем книгу Excel и активный лист
+    book = load_workbook(file_path)
+    sheet = book.active
 
-    for index, row in df.iterrows():
+    # Преобразовываем активный лист Excel в DataFrame
+    data = list(sheet.values)
+    columns = next(iter(data))
+    df = pd.DataFrame(data[1:], columns=columns)
+
+    for index in range(len(df)):
+        # Получаем строку как Series для изменения
+        row = df.iloc[index]
+        
         print(index)
         # Извлекаем имя
         name = extract_name(row['Имя адресата'], mystem)
-
         # Определяем пол
         gender = determine_gender(name, mystem)
 
-        # Обновляем 'Имя для рассылки'
+        # Обновляем 'Имя для рассылки' и 'Обращение' в DataFrame
         df.at[index, 'Имя для рассылки'] = name
-
-        # Обновляем 'Обращение' в зависимости от количества слов в имени
-        name_words = name.split()
-        if len(name_words) == 1:
+        if len(name.split()) == 1:
             greeting = f"{name}, здравствуйте!"
         else:
             greeting = f"Уважаем{'ая' if gender == 'female' else 'ый'} {name},"
-
         df.at[index, 'Обращение'] = greeting
-        # Склоняем 'Должность' в дательный падеж
+
+        # Склоняем 'Должность' в дательный падеж и обновляем в DataFrame
         position = row['Должность']
-        df.at[index, 'Должность Дательный падеж'] = inflect_to_dative(row['Должность'], morph)  
-    # Сохраняем изменения
-    df.to_excel(file_path, index=False)
+        df.at[index, 'Должность Дательный падеж'] = inflect_to_dative(position, morph)
+
+  
+    # Сохраняем изменения, не трогая остальные ячейки
+    for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=False), start=2):
+        for c_idx, value in enumerate(row, start=1):
+            sheet.cell(row=r_idx, column=c_idx, value=value)
+
+    book.save(file_path)
 
 # Вызываем функцию с путем к вашему файлу
 if __name__ == '__main__':
@@ -96,5 +110,7 @@ if __name__ == '__main__':
         file_path = sys.argv[1]  # Используем имя файла, переданное из .bat файла
         process_excel_file(file_path)
     else:
-        print("Ошибка: Не указан путь к файлу Excel.")
-        sys.exit(1)
+        file_path = 'list.xlsx'
+        process_excel_file(file_path)        
+        #print("Ошибка: Не указан путь к файлу Excel.")
+        #sys.exit(1)
