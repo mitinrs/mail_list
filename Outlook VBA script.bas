@@ -1,3 +1,4 @@
+Attribute VB_Name = "Module1"
 Sub SendMassEmails()
     Dim ExcelApp As Object
     Dim ExcelSheet As Object
@@ -10,12 +11,12 @@ Sub SendMassEmails()
     Dim i As Integer
     Dim LastRow As Integer
 
-    ' РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂС‹ РїСЂРёР»РѕР¶РµРЅРёР№
+    ' Создаем экземпляры приложений
     Set ExcelApp = CreateObject("Excel.Application")
     Set WordApp = CreateObject("Word.Application")
     Set OutApp = CreateObject("Outlook.Application")
 
-    ' РџСЂРѕСЃРёРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РІС‹Р±СЂР°С‚СЊ С„Р°Р№Р» Excel СЃ Р°РґСЂРµСЃР°РјРё Рё С€Р°Р±Р»РѕРЅ Word
+    ' Просим пользователя выбрать файл Excel с адресами и шаблон Word
     With ExcelApp.FileDialog(msoFileDialogFilePicker)
         .Title = "Select the Excel file"
         .Filters.Add "Excel Files", "*.xls; *.xlsx"
@@ -38,51 +39,51 @@ Sub SendMassEmails()
         End If
     End With
 
-    ' РћС‚РєСЂС‹РІР°РµРј Excel Рё С‡РёС‚Р°РµРј РґР°РЅРЅС‹Рµ
+    ' Открываем Excel и читаем данные
     Set ExcelSheet = ExcelApp.Workbooks.Open(FilePath).Sheets(1)
     LastRow = ExcelSheet.Cells(ExcelSheet.Rows.Count, "A").End(-4162).Row
 
     For i = 2 To LastRow
-        ' РћС‚РєСЂС‹РІР°РµРј РґРѕРєСѓРјРµРЅС‚ Word
+        ' Открываем документ Word
         Set WordDoc = WordApp.Documents.Open(WordTemplatePath, ReadOnly:=True)
 
-        ' РљРѕРїРёСЂСѓРµРј СЃРѕРґРµСЂР¶РёРјРѕРµ Word-РґРѕРєСѓРјРµРЅС‚Р° РІ Р±СѓС„РµСЂ РѕР±РјРµРЅР°
+        ' Копируем содержимое Word-документа в буфер обмена
         WordDoc.Content.Copy
         WordDoc.Close False
         Set WordDoc = Nothing
 
-        ' РЎРѕР·РґР°РµРј РЅРѕРІРѕРµ РїРёСЃСЊРјРѕ РІ Outlook
+        ' Создаем новое письмо в Outlook
         Set OutMail = OutApp.CreateItem(0)
         
         With OutMail
             .Display
-            ' Р’СЃС‚Р°РІР»СЏРµРј СЃРѕРґРµСЂР¶РёРјРѕРµ РёР· Р±СѓС„РµСЂР° РѕР±РјРµРЅР°
+            ' Вставляем содержимое из буфера обмена
             .GetInspector.WordEditor.Content.PasteAndFormat (wdFormatOriginalFormatting)
     
-            ' Р—Р°РјРµРЅСЏРµРј РїР»РµР№СЃС…РѕР»РґРµСЂ РЅР° РѕР±СЂР°С‰РµРЅРёРµ
+            ' Заменяем плейсхолдер на обращение
             With .GetInspector.WordEditor.Content.Find
-                .Text = "[РРјСЏ]"
-                .Replacement.Text = ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "РћР±СЂР°С‰РµРЅРёРµ")).Value
+                .Text = "[Имя]"
+                .Replacement.Text = ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "Обращение")).Value
                 .Wrap = 1
                 .Execute Replace:=2
             End With
     
-            ' Р”РѕР±Р°РІР»СЏРµРј РїРѕР»СѓС‡Р°С‚РµР»СЏ, С‚РµРјСѓ Рё РІР»РѕР¶РµРЅРёСЏ
-            .To = ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "Email Р°РґСЂРµСЃР°С‚РѕРІ")).Value
-            .Subject = ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "РўРµРјР° РїРёСЃСЊРјР°")).Value
-            .Attachments.Add ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "РџСѓС‚СЊ Рє С„Р°Р№Р»Сѓ РІР»РѕР¶РµРЅРёСЋ")).Value
+            ' Добавляем получателя, тему и вложения
+            .To = ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "Email адресатов")).Value
+            .Subject = ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "Тема письма")).Value
+            .Attachments.Add ExcelSheet.Cells(i, FindColumnByName(ExcelSheet, "Путь к файлу вложению")).Value
             .Save
             .Close olDiscard
         End With
         Set OutMail = Nothing
     Next i
 
-    ' Р—Р°РєСЂС‹РІР°РµРј Excel
+    ' Закрываем Excel
     ExcelApp.Quit
     Set ExcelSheet = Nothing
     Set ExcelApp = Nothing
 
-    ' Р—Р°РєСЂС‹РІР°РµРј Outlook (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ, РµСЃР»Рё Outlook СѓР¶Рµ РѕС‚РєСЂС‹С‚)
+    ' Закрываем Outlook (необязательно, если Outlook уже открыт)
     ' Set OutApp = Nothing
 End Sub
 
@@ -98,3 +99,4 @@ Function FindColumnByName(sheet As Object, columnName As String) As Integer
     Wend
     FindColumnByName = 0
 End Function
+
